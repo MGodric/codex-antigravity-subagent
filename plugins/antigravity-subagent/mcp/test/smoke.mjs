@@ -20,6 +20,8 @@ try {
     const check = await client.callTool({ name: 'agy_check', arguments: {} });
     assert.notEqual(check.isError, true);
     assert.match(check.content[0].text, /Antigravity CLI is available at:/);
+    assert.equal(check.structuredContent.runnerVersion, '0.2.1');
+    assert.equal(typeof check.structuredContent.cliVersion, 'string');
 
     const delegated = await client.callTool({
       name: 'agy_delegate',
@@ -32,6 +34,8 @@ try {
     });
     assert.notEqual(delegated.isError, true);
     assert.match(delegated.content[0].text, /AGY_MCP_OK/);
+    assert.equal(delegated.structuredContent.status, 'SUCCESS');
+    assert.equal(delegated.structuredContent.transport, check.structuredContent.capabilities.streamInput ? 'stream-json' : 'argv');
   }
   console.error('MCP smoke test passed');
 } finally {
