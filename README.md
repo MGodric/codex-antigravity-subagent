@@ -1,7 +1,6 @@
 # Antigravity Subagent for Codex
 
-[![CI](https://github.com/IlleJiViN/codex-antigravity-subagent/actions/workflows/ci.yml/badge.svg)](https://github.com/IlleJiViN/codex-antigravity-subagent/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/IlleJiViN/codex-antigravity-subagent)](https://github.com/IlleJiViN/codex-antigravity-subagent/releases)
+[![CI](https://github.com/MGodric/codex-antigravity-subagent/actions/workflows/ci.yml/badge.svg)](https://github.com/MGodric/codex-antigravity-subagent/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 Use your locally authenticated Google Antigravity CLI (`agy`) as an external second agent from Codex. Ask Antigravity for a review, research pass, debugging hypothesis, or bounded implementation while Codex remains responsible for verification and the final result.
@@ -9,9 +8,11 @@ Use your locally authenticated Google Antigravity CLI (`agy`) as an external sec
 > [!IMPORTANT]
 > This is an independent community project. It is not affiliated with or endorsed by Google, Antigravity, or OpenAI.
 
+This fork maintains CLI compatibility changes on top of [IlleJiViN/codex-antigravity-subagent](https://github.com/IlleJiViN/codex-antigravity-subagent). The upstream MIT license and attribution are preserved.
+
 ## What it adds
 
-- `agy_check` verifies that Antigravity CLI is installed and reports its path.
+- `agy_check` launches the CLI to report its path, version, and supported headless capabilities. Authentication requires an actual delegation.
 - `agy_delegate` runs one bounded prompt in Antigravity headless mode and returns its response.
 - `$delegate-to-antigravity` teaches Codex when and how to delegate safely.
 
@@ -21,7 +22,7 @@ Delegation defaults to `plan` mode. Edit-capable calls are marked as potentially
 
 - Codex CLI or Codex in the ChatGPT desktop app
 - Node.js 20 or newer
-- [Google Antigravity CLI](https://antigravity.google/docs/cli-getting-started), installed and authenticated as `agy`
+- [Google Antigravity CLI](https://www.antigravity.google/docs/cli/install/), installed and authenticated as `agy`, with JSON print output and plan mode. Stream-input support is detected from `--help`; older CLIs use a bounded argv fallback.
 
 Verify the prerequisites:
 
@@ -37,7 +38,7 @@ agy --version
 Run this once:
 
 ```powershell
-codex plugin marketplace add IlleJiViN/codex-antigravity-subagent --ref main
+codex plugin marketplace add MGodric/codex-antigravity-subagent --ref main
 ```
 
 The command is identical on Windows, macOS, and Linux.
@@ -76,7 +77,7 @@ Use Antigravity to propose a fix, but keep it in plan mode.
 
 ## Permission and data flow
 
-`agy_delegate` starts the official `agy --print` process on your machine. The prompt, workspace path, and any files Antigravity chooses to read are handled according to your local Antigravity configuration, Google account, sandbox, and permission settings.
+`agy_delegate` starts the official CLI on your machine. It sends one prompt as UTF-8 NDJSON on stdin when the CLI supports stream input; otherwise it uses JSON print mode with the prompt in argv. Public `text` and `json` outputs are preserved. A complete `SUCCESS` result and exit code zero are required; waiting, malformed results, truncation, and timeout are reported as errors. The prompt, workspace path, and any files Antigravity chooses to read are handled according to your local Antigravity configuration, Google account, sandbox, and permission settings.
 
 The plugin:
 
@@ -92,8 +93,8 @@ Do not delegate secrets, credentials, private customer data, deployments, purcha
 
 | Mode | Intended use | Can change files? |
 | --- | --- | --- |
-| `plan` | Reviews, research, diagnosis, proposed changes | No edits intended |
-| `default` | Follow your persisted Antigravity policy | Depends on local policy |
+| `plan` | Reviews, research, diagnosis, proposed changes; current CLI prepends `/plan` | No edits intended; not OS containment |
+| `default` | Omit `--mode` to follow your persisted Antigravity policy | Depends on local policy |
 | `accept-edits` | Explicitly authorized implementation | Yes |
 
 Codex should use `plan` unless you explicitly request workspace changes.
@@ -116,7 +117,11 @@ codex plugin marketplace remove antigravity-subagent
 
 ### `agy_check` says the CLI is missing
 
-Install Antigravity from the [official getting-started guide](https://antigravity.google/docs/cli-getting-started), open a new terminal, authenticate with `agy`, then restart Codex.
+Install Antigravity from the [official installation guide](https://www.antigravity.google/docs/cli/install/), open a new terminal, authenticate with `agy`, then restart Codex. Windows discovery includes `%LOCALAPPDATA%\\agy\\bin\\agy.exe`, and Unix discovery includes `~/.local/bin/agy`. For a nonstandard location, set `AGY_EXECUTABLE` to an absolute native executable path; Windows shell wrappers are not supported.
+
+### Launch denied or incompatible CLI
+
+A denied `--version` or `--help` launch is reported separately from missing headless capabilities. Use the host's normal process approval flow for sandbox denial; no PATH or ACL changes are needed. If the CLI lacks required flags, update it. Oversized Windows prompts require stream input or a smaller task. Do not combine `--disable-slash-commands` with `--mode plan`: current agy warns that this removes plan's effect.
 
 ### The plugin does not appear
 
@@ -136,7 +141,7 @@ npm run build
 npm test
 ```
 
-`npm test` performs a real stdio MCP round trip and calls the installed `agy` CLI in `plan` mode. CI uses `npm run test:protocol` so contributors can validate the MCP handshake without an Antigravity account. The checked-in `dist/server.cjs` is the runtime artifact used by the installed plugin.
+`npm test` runs compatibility regressions, performs a real stdio MCP round trip, and calls the installed `agy` CLI in `plan` mode. `npm run test:protocol` runs the offline regressions and MCP handshake without an Antigravity account. Tests cover long Unicode stdin prompts, legacy argv, mode mapping, unsuccessful statuses, malformed output, capture bounds, and timeout. The checked-in `dist/server.cjs` is the runtime artifact used by the installed plugin.
 
 Security reports and the trust model are documented in [SECURITY.md](SECURITY.md). Contributions are welcome through issues and pull requests.
 

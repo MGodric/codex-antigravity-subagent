@@ -6,7 +6,7 @@ This plugin launches the official Google Antigravity CLI as a local child proces
 
 The `agy_delegate` MCP tool is marked as potentially destructive because `default` and `accept-edits` modes can modify workspace files. The bundled skill instructs Codex to default to `plan` mode and to use edit-capable modes only after explicit user authorization.
 
-The server does not expose arbitrary extra CLI arguments or the `--dangerously-skip-permissions` flag. Each call has a finite timeout and a 2 MiB combined capture limit per output stream.
+The server does not expose arbitrary extra CLI arguments or the `--dangerously-skip-permissions` flag. Each call has a finite execution timeout (preceded by bounded version/help probes) and a 2 MiB capture limit per output stream. Truncation is an error. Timeout cleanup targets only the launched process tree. Current `plan` mode is a `/plan` instruction prefix, not OS containment; workspace and permission boundaries remain the responsibility of the CLI and host.
 
 ## Supported versions
 

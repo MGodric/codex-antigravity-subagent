@@ -1,6 +1,6 @@
 {
   "name": "@illejivin/agy-mcp-server",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "type": "module",
   "engines": {
@@ -9,8 +9,9 @@
   "scripts": {
     "build": "esbuild src/index.ts --bundle --minify --platform=node --format=cjs --target=node20 --outfile=dist/server.cjs",
     "check": "tsc --noEmit",
-    "test": "node test/smoke.mjs",
-    "test:protocol": "node test/smoke.mjs --protocol-only"
+    "test": "node --test test/compatibility.mjs && node test/smoke.mjs",
+    "test:compatibility": "node --test test/compatibility.mjs",
+    "test:protocol": "node --test test/compatibility.mjs && node test/smoke.mjs --protocol-only"
   },
   "dependencies": {
     "@modelcontextprotocol/server": "2.0.0",
